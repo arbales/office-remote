@@ -1,0 +1,51 @@
+%html
+  %head
+    %title Alderaan                
+    %link{rel: 'stylesheet', type: 'text/css', href: 'http://do.com/assets/help.css?v2'}
+    %script{src: '//cdnjs.cloudflare.com/ajax/libs/zepto/1.0rc1/zepto.min.js'}
+%body
+  .page
+    %header.banner
+      .container
+        %hgroup.site-title
+          %h1 Alderaan
+        %nav{role: 'navigation'}
+          %ul
+            %li
+              %a.button.success{href: '/'}Recticulate Splines
+      .pop-stripe
+    %hr
+    #content.content{role: 'main'}
+      .content-header
+        .container
+          .main-content
+            .entry-content
+              = yield
+    .footer-shim
+  :javascript
+    $("[data-role='remote-link']").on('click', function(e){
+      e.preventDefault();
+      var el = $(e.target);
+      $.ajax({
+        type: el.attr('data-method'),
+        url: el.attr('href')
+      });
+    });
+    $("[data-role='remote-form']").on("submit", function(e){
+      e.preventDefault();
+      var form = $(e.target);
+      data = form.serialize()
+      $.ajax({
+        type: form.attr('method'),
+        url: form.attr('action'),
+        data: data,
+        complete: function(){
+          $('input[type=text]', form).each(function(index, el){
+           $(el).val('');
+          });
+        }
+      });
+    });
+    
+    
+

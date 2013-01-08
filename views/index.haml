@@ -1,0 +1,16 @@
+%hgroup
+  %h2.h1 Spotify
+%a.button{href: '/spotify?action=previous', data: {role: 'remote-link', method: 'put'}} Previous
+%a.button.success{href: '/spotify?action=playpause', data: {role:'remote-link', method:'put'}} Play / Pause
+%a.button{href: '/spotify?action=next', data: {role: 'remote-link', method: 'put'}} Next
+
+%form.inline{data: {role: 'remote-form'}, action: '/spotify?action=open', method: 'put'}
+  %p
+    %input{type: 'text', placeholder: 'Spotify HTTP URL (http://open.spotify.com/…)', name: 'url'}
+  %p.submit
+    %button{type: 'submit', class: 'large'} Play Song
+
+%hgroup
+  %h2.h1 System Volume
+%a.button{href: '/volume/increment', data: {role: 'remote-link', method: 'delete'}} ▽
+%a.button{href: '/volume/increment', data: {role: 'remote-link', method: 'post'}} △

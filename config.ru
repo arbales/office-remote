@@ -17,7 +17,7 @@ class Office < Sinatra::Base
   end
   
   get '/' do
-    [701, "Meh"]
+    haml :index
   end
   
   post '/volume/increment' do
@@ -52,7 +52,7 @@ class Office < Sinatra::Base
     when 'previous'
       tell :spotify, 'next previous'
     when 'open'
-      tell :spotify, "open location #{params[:url]}"
+      tell :spotify, "open location \"#{params[:url]}\""
     else
       halt 422
     end
