@@ -55,13 +55,27 @@ module Office
 end
 
 module Office
+  module ShellScripts
+    def resurrect
+      `git reset --hard && git pull --rebase origin master && bundle && kill -s HUP \`cat tmp/office.pid\``
+    end
+  end
+end
+
+module Office
   class Application < Sinatra::Base
     include Office::AppleScript
+    include Office::ShellScripts
     
     get '/' do
       haml :index
     end
     
+    get '/restart' do
+      resurrect
+      "Restarting. By your command."
+    end
+
     post '/volume/increment' do
       step = (params[:step] || 7).to_i
       step_volume step
