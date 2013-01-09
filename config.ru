@@ -1,64 +1,112 @@
 require 'bundler/setup'
 require 'sinatra/base'
 
-class Office < Sinatra::Base
-
-  def tell(application, command)
-    application = application.to_s.capitalize
-
-    # AppleScript Content
-    osa = <<-EOT
-      tell application "#{application}"
-        #{command}
-      end tell
-    EOT
-    # Issue command view the shell. 
-    system "osascript <<END \n#{osa}\nEND"
-  end
-  
-  get '/' do
-    haml :index
-  end
-  
-  post '/volume/increment' do
-     step = (params[:step] || 7).to_i
-    `osascript -e 'set volume output volume (output volume of (get volume settings) + #{step})'`
-    204
-  end
-
-  delete '/volume/increment' do
-    step = (params[:step] || 7).to_i
-    `osascript -e 'set volume output volume (output volume of (get volume settings) - #{step})'`    
-    204
-  end
-
-  put '/volume' do
-    volume = (params[:volume] || 0).to_i
-    `osascript -e 'set volume output volume #{volume}'`
-    204
-  end
-
-  put '/spotify' do
-    unless action = params[:action]
-      halt 422
-    end
-    action.downcase!
-    
-    case action
-    when 'play', 'pause', 'playpause'
-      tell :spotify, action
-    when 'next'
-      tell :spotify, 'next track'
-    when 'previous'
-      tell :spotify, 'next previous'
-    when 'open'
-      tell :spotify, "open location \"#{params[:url]}\""
-    else
-      halt 422
+module Office
+  module AppleScript
+    def osa(script, multiline=false)
+      script = multiline ? "osascript <<END \n#{script}\nEND" : "osascript -e '#{script}'"
+      `#{script}`
     end
     
-    [202, "Command issued."]
+    def tell(application, command)
+      application = application.to_s.capitalize
+    
+      # AppleScript Content
+      script = <<-EOT
+        tell application "#{application}"
+          #{command}
+        end tell
+      EOT
+      # Issue command view the shell.
+      osa script, true
+    end
+    
+    def set_volume(volume)
+      osa "set volume output volume #{volume}"
+    end
+    
+    def current_volume
+      "output volume of (get volume settings)"
+    end
+    
+    def step_volume(amount = 1)
+      set_volume "(#{current_volume} + #{amount})"
+    end
+    
+    # Crossfades volume.
+    # TODO: Write an AppleScript version of this instead.
+    def crossfade(&block)
+      Thread.new do
+        volume = osa(current_volume).to_i
+        step = 5
+        fade(volume, -step)
+        block.call
+        fade(volume, step)
+      end
+    end
+    
+    # Fades volume towards a given amount by stepping.
+    def fade(amount, step)
+      (amount / step.abs).times do
+        step_volume step
+      end
+    end
   end
 end
 
-run Office
+module Office
+  class Application < Sinatra::Base
+    include Office::AppleScript
+    
+    get '/' do
+      haml :index
+    end
+    
+    post '/volume/increment' do
+      step = (params[:step] || 7).to_i
+      step_volume step
+      204
+    end
+  
+    delete '/volume/increment' do
+      step = (params[:step] || 7).to_i
+      step_volume -step
+      204
+    end
+  
+    put '/volume' do
+      volume = (params[:volume] || 0).to_i
+      set_volume volume
+      204
+    end
+  
+    put '/spotify' do
+      unless action = params[:action]
+        halt 422
+      end
+      action.downcase!
+      
+      case action
+      when 'play', 'pause', 'playpause'
+        tell :spotify, action
+      when 'next'
+        crossfade do
+          tell :spotify, 'next track'
+        end
+      when 'previous'
+        crossfade do
+          tell :spotify, 'next previous'
+        end
+      when 'open'
+        crossfade do
+          tell :spotify, "open location \"#{params[:url]}\""
+        end
+      else
+        halt 422
+      end
+      
+      [202, "Command issued."]
+    end
+  end
+end
+run Office::Application
