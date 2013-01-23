@@ -59,6 +59,12 @@ module Office
     def resurrect
       `git reset --hard && git pull --rebase origin master && bundle && kill -s HUP \`cat tmp/office.pid\``
     end
+
+    def play(name)
+      sound_path = File.expand_path("../public/#{name}.mp3", __FILE__)
+      puts sound_path
+      `afplay #{sound_path}`
+    end
   end
 end
 
@@ -92,6 +98,24 @@ module Office
       volume = (params[:volume] || 0).to_i
       set_volume volume
       204
+    end
+
+    post '/warning/generic' do
+      Thread.new do
+        5.times do
+          play('alert')
+          sleep 0.25
+          play('alert')
+          sleep 3
+        end
+      end
+      204
+    end
+
+    post '/paging/:name' do
+      name = params[:name].gsub('-', ' ')
+      play('hailing')
+      `say '#{name}. #{name}, please'`
     end
   
     put '/spotify' do
