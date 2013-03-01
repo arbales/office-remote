@@ -9,7 +9,7 @@ module Office
     end
     
     def tell(application, command)
-      application = application.to_s.capitalize
+      application = application.to_s.gsub('_', ' ').capitalize
     
       # AppleScript Content
       script = <<-EOT
@@ -80,6 +80,11 @@ module Office
     get '/restart' do
       resurrect
       "Restarting. By your command."
+    end
+
+    post '/chrome/restart' do
+      tell :google_chrome, "quit"
+      tell :google_chrome, "activate"
     end
 
     post '/volume/increment' do
